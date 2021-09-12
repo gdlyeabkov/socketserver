@@ -34,7 +34,6 @@ const ContactSchema = new mongoose.Schema({
 const ContactModel = mongoose.model('ContactModel', ContactSchema);
 
 const url = `mongodb+srv://glebClusterUser:glebClusterUserPassword@cluster0.fvfru.mongodb.net/contacts?retryWrites=true&w=majority`;
-
 mongoose.connect(url, connectionParams)
     .then( () => {
         console.log('Connected to database ')
