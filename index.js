@@ -5,6 +5,19 @@ const app = express()
 const server = require('http').Server(app)
 const io = require("socket.io")(server)
 const serveStatic = require('serve-static')
+const multer  = require('multer')
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, 'uploads')
+    },
+    filename: function (req, file, cb) {
+        cb(null, req.query.contactid)
+        // cb(null, file.originalname)
+    }
+})
+const upload = multer({ storage: storage })
+
 
 app.use('/', serveStatic(path.join(__dirname, '/dist')))
 
@@ -103,6 +116,54 @@ app.get('/contacts/list', (req, res) => {
 
 })
 
+app.get('/contacts/getavatar', async (req, res) => {
+
+    return res.sendFile(`${__dirname}/uploads/${req.query.contactid}.png`)
+
+})
+
+app.post('/contacts/upload', upload.single('myFile'), async (req, res) => {
+
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader("Access-Control-Allow-Headers", "X-Requested-With, X-Access-Token, X-Socket-ID, Content-Type");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
+
+    let file = req.file
+
+    if(!file){
+        return res.json({ "status": "Error" })
+    }
+
+    await ContactModel.updateOne({ _id: req.query.contactid },
+        {
+            avatar: req.query.path
+        }, (err) => {
+        if(err){
+            return res.json({ "status": "Error" })
+        }
+        return res.json({ "status": "OK" })
+    })
+
+})
+
+app.get('/contacts/edit', async (req, res) => {
+
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader("Access-Control-Allow-Headers", "X-Requested-With, X-Access-Token, X-Socket-ID, Content-Type");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
+
+    await ContactModel.updateOne({ _id: req.query.contactid },
+        {
+            avatar: req.query.path
+        }, (err) => {
+        if(err){
+            return res.json({ "status": "Error" })
+        }
+        return res.json({ "status": "OK" })
+    })
+})
 
 app.get('/contacts/add', (req, res) => {
 
@@ -217,8 +278,8 @@ app.get("**", (req, res) => {
     return res.json({ "status": "Error" })
 })
 
-const port = process.env.PORT || 8080
-// const port = 4000 
+// const port = process.env.PORT || 8080
+const port = 4000 
 
 // server.listen(port)
 app.listen(port)
