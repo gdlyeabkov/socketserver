@@ -278,8 +278,8 @@ app.get("**", (req, res) => {
     return res.json({ "status": "Error" })
 })
 
-// const port = process.env.PORT || 8080
-const port = 4000 
+const port = process.env.PORT || 8080
+// const port = 4000 
 
 // server.listen(port)
 app.listen(port)
