@@ -1,3 +1,4 @@
+const nodemailer = require("nodemailer")
 const mongoose = require('mongoose')
 const express = require('express')
 const path = require('path')
@@ -12,12 +13,17 @@ const storage = multer.diskStorage({
       cb(null, 'uploads')
     },
     filename: function (req, file, cb) {
-        cb(null, req.query.contactid)
+        cb(null, `${req.query.contactid}.png`)
         // cb(null, file.originalname)
     }
 })
 const upload = multer({ storage: storage })
 
+// var transporter = nodemailer.createTransport({
+//     host: 'localhost',
+//     port: 587,
+//     secure: false
+// })
 
 app.use('/', serveStatic(path.join(__dirname, '/dist')))
 
@@ -55,13 +61,36 @@ mongoose.connect(url, connectionParams)
         console.error(`Error connecting to the database. \n${err}`);
     })
 
-app.get('/sockets/connect', (req, res) => {
-    // io.on('connection', (socket) => {
-    //     console.log(`Присоединился socket.id: ${socket.id}`)
-    //     socket.on('disconnect', function() {
-    //         console.log(`Отключился socket.id: ${socket.id}`)
-    //     })
+io.on('connection', (socket) => {
+    console.log(`Присоединился socket.id: ${socket.id}`)
+    // let mailOptions = {
+    //     from: `"${'glebdyakov2000'}" <${"glebdyakov2000"}>`,
+    //     to: `${"glebdyakov2000@gmail.com"}`,
+    //     subject: `${"контакты"}`,
+    //     html : `${"сокет присоединился"}`
+    // }
+    // transporter.sendMail(mailOptions, function (err, info) {
     // })
+    socket.on('disconnect', function() {
+        console.log(`Отключился socket.id: ${socket.id}`)
+        // let mailOptions = {
+        //     from: `"${'glebdyakov2000'}" <${"glebdyakov2000"}>`,
+        //     to: `${"glebdyakov2000@gmail.com"}`,
+        //     subject: `${"контакты"}`,
+        //     html : `${"сокет отключился"}`
+        // }
+        // transporter.sendMail(mailOptions, function (err, info) {    
+        // })
+    })
+})
+
+app.get('/sockets/connect', (req, res) => {
+    io.on('connection', (socket) => {
+        console.log(`Присоединился socket.id: ${socket.id}`)
+        socket.on('disconnect', function() {
+            console.log(`Отключился socket.id: ${socket.id}`)
+        })
+    })
 })
 
 app.get('/contacts/create', (req, res) => {
@@ -135,15 +164,17 @@ app.post('/contacts/upload', upload.single('myFile'), async (req, res) => {
         return res.json({ "status": "Error" })
     }
 
-    await ContactModel.updateOne({ _id: req.query.contactid },
-        {
-            avatar: req.query.path
-        }, (err) => {
-        if(err){
-            return res.json({ "status": "Error" })
-        }
-        return res.json({ "status": "OK" })
-    })
+    // await ContactModel.updateOne({ _id: req.query.contactid },
+    //     {
+    //         avatar: req.query.path
+    //     }, (err) => {
+    //     if(err){
+    //         return res.json({ "status": "Error" })
+    //     }
+    //     return res.json({ "status": "OK" })
+    // })
+
+    return res.json({ "status": "OK" })
 
 })
 
@@ -240,6 +271,7 @@ app.get('/contacts/messages/add', (req, res) => {
                 messages: [
                     {
                         id: req.query.contactid,
+                        otherMessageId: req.query.othercontactid,
                         message: req.query.message,
                     }
                 ]
@@ -254,7 +286,8 @@ app.get('/contacts/messages/add', (req, res) => {
                 { 
                     messages: [
                         {
-                            id: req.query.contactid,
+                            id: req.query.othercontactid,
+                            otherMessageId: req.query.contactid,
                             message: req.query.message,
                         }
                     ]
@@ -281,5 +314,5 @@ app.get("**", (req, res) => {
 const port = process.env.PORT || 8080
 // const port = 4000 
 
-// server.listen(port)
-app.listen(port)
+server.listen(port)
+// app.listen(port)

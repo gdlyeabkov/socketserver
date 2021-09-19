@@ -5,10 +5,74 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Messenger Serv</title>
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
     <p>
         Messenger Service API
     </p>
+    <!-- <form method="post" action="https://opalescent-soapy-baseball.glitch.me/contacts/upload" enctype="multipart/form-data"> -->
+    <form method="post" action="http://localhost:4000/contacts/upload/?contactid=61409c499f26760016d94e20&path=abc" enctype="multipart/form-data">
+        <input id="fileInputElement" type="file" name="myFile"/>
+        <input type="submit"/>
+    </form>
+    <script>
+        const myio = io('/')
+        myio.on('sendMessage', (message) => {
+          console.log(`sendMessage: ${message}`)
+        })
+        myio.on('connection', (socket) => {
+          console.log(`присоединился: ${socket}`)
+          // myio.emit('sendMessage', socket.id)
+        })
+
+
+
+        let formdata = new FormData();
+        
+        let fileInputElement = document.getElementById("fileInputElement")
+        fileInputElement.addEventListener("change", (event) => {
+            formdata.append("myFile", fileInputElement.files[0])
+            Object.values(formdata).map(formdataitem => {
+                console.log(`formdata: ${formdataitem}`)
+            })
+        })
+        // formdata.append("myFile", { uri: 'D:\6.png', name: '6.png', type: 'image/png' }) 
+        
+        setTimeout(() => {
+          fetch(`http://localhost:4000/contacts/upload/?contactid=61409c499f26760016d94e20&path=abc`, {
+            mode: 'cors',
+            method: 'post',
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            },
+            body: formdata
+          }).then(response => response.body).then(rb  => {
+            const reader = rb.getReader()
+            return new ReadableStream({
+              start(controller) {
+                function push() {
+                  reader.read().then( ({done, value}) => {
+                    if (done) {
+                      console.log('done', done);
+                      controller.close();
+                      return;
+                    }
+                    controller.enqueue(value);
+                    console.log(done, value);
+                    push();
+                  })
+                }
+                push();
+              }
+            });
+          }).then(stream => {
+            return new Response(stream, { headers: { "Content-Type": "text/html" } }).text();
+          })
+          .then(result => {
+            console.log(`${result}`)
+          });
+        }, 7500)
+    </script>
 </body>
 </html>
